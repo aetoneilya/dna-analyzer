@@ -1,10 +1,13 @@
+#ifndef SRC_MENU_H_
+#define SRC_MENU_H_
+
 #include <iostream>
 #include <memory>
 #include <vector>
 
 struct MenuItem {
   virtual std::string GetName() { return "This is blank menu option"; }
-  virtual void Do() { std::cout << "Its doing nothing\n"; };
+  virtual void Do() { std::cout << "Its doing nothing\n"; }
 };
 
 class Menu {
@@ -34,10 +37,14 @@ class Menu {
   }
 
  public:
-  void Add(std::unique_ptr<MenuItem> item) { items.push_back(std::move(item)); }
+  void AddMenuItem(std::unique_ptr<MenuItem> item) {
+    items.push_back(std::move(item));
+  }
 
   void Start() {
     std::cout << greeting << std::endl;
     MenuCycle();
   }
 };
+
+#endif  // SRC_MENU_H_
