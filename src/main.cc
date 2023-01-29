@@ -1,7 +1,7 @@
 #include <fstream>
 
-#include "DnaAlgorithms.h"
 #include "Menu.h"
+#include "dna-algorithms/DnaAlgorithms.h"
 
 struct MenuItemDnaSearch : public MenuItem {
   std::string GetName() override { return "Exact DNA search"; }
@@ -40,12 +40,43 @@ struct MenuItemDnaSearch : public MenuItem {
 
 struct MenuItemNwSequenceAlignment : public MenuItem {
   std::string GetName() override { return "NW sequence alignment"; }
-  void Do() override { std::cout << "I am working"; }
+  void Do() override {
+    int match_s = 1;
+    int mismatch_s = -1;
+    int gap_s = -2;
+
+    std::string str1 = "GGGCGACACTCCACCATAGA";
+    std::string str2 = "GGCGACACCCACCATACAT";
+    // std::string str1 = "GAAC";
+    // std::string str2 = "CAAGAC";
+
+    DnaAlgorithm::NwSequence res = DnaAlgorithm::NwSequenceAlignment(
+        match_s, mismatch_s, gap_s, str1, str2);
+
+    std::cout << "Score: " << res.score << std::endl;
+
+    std::cout << res.str1 << std::endl;
+    for (int i = 0; i < res.str1.size(); i++) {
+      if (res.str1.at(i) == res.str2.at(i))
+        std::cout << '|';
+      else
+        std::cout << " ";
+    }
+    std::cout << std::endl << res.str2 << std::endl;
+  }
 };
 
 struct MenuItemRegExpr : public MenuItem {
   std::string GetName() override { return "Matching regular expressions"; }
-  void Do() override { std::cout << "I am working"; }
+  void Do() override {
+    std::string regexp, text;
+    std::cout << "enter regexp:\n";
+    std::cin >> regexp;
+    std::cout << "enter text\n";
+    std::cin >> text;
+
+    std::cout << DnaAlgorithm::RegExpr(regexp, text);
+  }
 };
 
 struct MenuItemKSimilar : public MenuItem {
