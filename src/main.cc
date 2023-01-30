@@ -1,101 +1,158 @@
 #include <fstream>
 
-#include "Menu.h"
-#include "dna-algorithms/DnaAlgorithms.h"
+#include "dna-algorithms/dna-algorithms.h"
+#include "menu.h"
 
-struct MenuItemDnaSearch : public MenuItem {
-  std::string GetName() override { return "Exact DNA search"; }
-  void Do() override {
-    std::string needle_path, haystack_path;
-    std::cout << "Enter path to text(Haystack): " << std::endl;
-    std::cin >> haystack_path;
-    std::cout << "Enter path to text(Needle): " << std::endl;
-    std::cin >> needle_path;
+void MenuItemDnaSearch() {
+  std::string needle_path =
+      Menu::GetUserInput("Enter path to text file(Haystack):\n");
+  std::string haystack_path =
+      Menu::GetUserInput("Enter path to text file(Needle):\n");
 
-    std::string needle, haystack;
-    std::ifstream haystack_input(haystack_path);
-    std::ifstream needle_input(needle_path);
+  std::ifstream haystack_input(haystack_path);
+  std::ifstream needle_input(needle_path);
 
-    haystack_input >> haystack;
-    needle_input >> needle;
+  std::string needle, haystack;
+  haystack_input >> haystack;
+  needle_input >> needle;
 
-    haystack_input.close();
-    needle_input.close();
+  if (!haystack_input.is_open() || haystack_input.fail())
+    throw std::invalid_argument("Can't read haystack");
 
-    try {
-      int q = 13;
-      std::vector<size_t> res =
-          DnaAlgorithm::RabinKarpSearch(needle, haystack, q);
+  if (!needle_input.is_open() || needle_input.fail())
+    throw std::invalid_argument("Can't read needle");
 
-      std::cout << "Occurrences in a string:\n";
-      for (auto r : res) {
-        std::cout << r << " ";
-      }
-      std::cout << std::endl;
-    } catch (const std::exception& e) {
-      std::cerr << "Error: " << e.what() << '\n';
-    }
-  }
+  if (!DnaAlgorithm::CorrectSequence(needle))
+    throw std::invalid_argument(
+        "Needle has wrong dna format. Only use alphabet {A, C, G, T } "
+        "uppercase");
+
+  if (!DnaAlgorithm::CorrectSequence(haystack))
+    throw std::invalid_argument(
+        "Haystack has wrong dna format. Only use alphabet {A, C, G, T } "
+        "uppercase");
+
+  int q = 13;
+  std::vector<size_t> res = DnaAlgorithm::RabinKarpSearch(needle, haystack, q);
+
+  std::cout << "Occurrences in a string:" << std::endl;
+  for (auto r : res) std::cout << r << " ";
+}
+
+void MenuItemNwSequenceAlignment() {
+  std::string input_file_path =
+      Menu::GetUserInput("Enter path to text input file:\n");
+
+  std::ifstream input(input_file_path);
+
+  int match_s, mismatch_s, gap_s;
+  std::string str1, str2;
+
+  input >> match_s >> mismatch_s >> gap_s >> str1 >> str2;
+
+  if (!input.is_open() || input.fail())
+    throw std::invalid_argument("Can't read input file");
+
+  if (!DnaAlgorithm::CorrectSequence(str1) ||
+      !DnaAlgorithm::CorrectSequence(str2))
+    throw std::invalid_argument(
+        "One of strings has wrong dna format. Only use alphabet {A, "
+        "C, G, T } "
+        "uppercase");
+
+  DnaAlgorithm::NwSequence res =
+      DnaAlgorithm::NwSequenceAlignment(match_s, mismatch_s, gap_s, str1, str2);
+
+  std::string lines;
+  for (size_t i = 0; i < res.str1.size(); i++)
+    lines.push_back(res.str1.at(i) == res.str2.at(i) ? '|' : ' ');
+
+  std::cout << "Score and aligned strings: " << std::endl
+            << res.score << std::endl
+            << res.str1 << std::endl
+            << lines << std::endl
+            << res.str2;
+}
+
+void MenuItemRegExpr() {
+  std::string input_file_path =
+      Menu::GetUserInput("Enter path to text input file:\n");
+
+  std::string regexp, text;
+
+  std::ifstream input(input_file_path);
+  input >> text >> regexp;
+  input.close();
+
+  if (!input.is_open() || input.fail())
+    throw std::invalid_argument("Can't read input file");
+
+  if (!DnaAlgorithm::CorrectSequence(text))
+    throw std::invalid_argument(
+        "Text has wrong dna format. Only use alphabet {A, "
+        "C, G, T } "
+        "uppercase");
+
+  bool match = DnaAlgorithm::RegExpr(regexp, text);
+
+  std::cout << (match ? "True" : "False");
 };
 
-struct MenuItemNwSequenceAlignment : public MenuItem {
-  std::string GetName() override { return "NW sequence alignment"; }
-  void Do() override {
-    int match_s = 1;
-    int mismatch_s = -1;
-    int gap_s = -2;
+void MenuItemKSimilar() {
+  std::string input_file_path =
+      Menu::GetUserInput("Enter path to text input file:\n");
 
-    std::string str1 = "GGGCGACACTCCACCATAGA";
-    std::string str2 = "GGCGACACCCACCATACAT";
-    // std::string str1 = "GAAC";
-    // std::string str2 = "CAAGAC";
+  std::string str1, str2;
 
-    DnaAlgorithm::NwSequence res = DnaAlgorithm::NwSequenceAlignment(
-        match_s, mismatch_s, gap_s, str1, str2);
+  std::ifstream input(input_file_path);
+  input >> str1 >> str2;
+  input.close();
 
-    std::cout << "Score: " << res.score << std::endl;
+  if (!input.is_open() || input.fail())
+    throw std::invalid_argument("Can't read input file");
 
-    std::cout << res.str1 << std::endl;
-    for (int i = 0; i < res.str1.size(); i++) {
-      if (res.str1.at(i) == res.str2.at(i))
-        std::cout << '|';
-      else
-        std::cout << " ";
-    }
-    std::cout << std::endl << res.str2 << std::endl;
-  }
-};
+  if (!DnaAlgorithm::CorrectSequence(str1) ||
+      !DnaAlgorithm::CorrectSequence(str2))
+    throw std::invalid_argument(
+        "One of strings has wrong dna format. Only use alphabet {A, "
+        "C, G, T } "
+        "uppercase");
 
-struct MenuItemRegExpr : public MenuItem {
-  std::string GetName() override { return "Matching regular expressions"; }
-  void Do() override {
-    std::string regexp, text;
-    std::cout << "enter regexp:\n";
-    std::cin >> regexp;
-    std::cout << "enter text\n";
-    std::cin >> text;
+  std::cout << "K = " << std::endl << DnaAlgorithm::KSimilar(str1, str2);
+}
 
-    std::cout << DnaAlgorithm::RegExpr(regexp, text);
-  }
-};
+void MenuItemMinimumWindow() {
+  std::string input_file_path =
+      Menu::GetUserInput("Enter path to text input file:\n");
 
-struct MenuItemKSimilar : public MenuItem {
-  std::string GetName() override { return "K-similar strings"; }
-  void Do() override { std::cout << "I am working"; }
-};
+  std::string str1, str2;
 
-struct MenuItemMinimumSubstr : public MenuItem {
-  std::string GetName() override { return "Minimum window substring"; }
-  void Do() override { std::cout << "I am working"; }
-};
+  std::ifstream input(input_file_path);
+  input >> str1 >> str2;
+  input.close();
+
+  if (!input.is_open() || input.fail())
+    throw std::invalid_argument("Can't read input file");
+
+  if (!DnaAlgorithm::CorrectSequence(str1) ||
+      !DnaAlgorithm::CorrectSequence(str2))
+    throw std::invalid_argument(
+        "One of strings has wrong dna format. Only use alphabet {A, "
+        "C, G, T } "
+        "uppercase");
+
+  std::cout << DnaAlgorithm::minWindow(str1, str2);
+}
 
 int main() {
   Menu menu;
-  menu.AddMenuItem(std::make_unique<MenuItemDnaSearch>());
-  menu.AddMenuItem(std::make_unique<MenuItemNwSequenceAlignment>());
-  menu.AddMenuItem(std::make_unique<MenuItemRegExpr>());
-  menu.AddMenuItem(std::make_unique<MenuItemKSimilar>());
-  menu.AddMenuItem(std::make_unique<MenuItemMinimumSubstr>());
+  menu.AddMenuItem({"Exact DNA search", MenuItemDnaSearch});
+  menu.AddMenuItem(
+      {"NW sequence alignment project", MenuItemNwSequenceAlignment});
+  menu.AddMenuItem({"Matching regular expressions", MenuItemRegExpr});
+  menu.AddMenuItem({"K-similar strings", MenuItemKSimilar});
+  menu.AddMenuItem({"Minimum window substring", MenuItemDnaSearch});
+
   menu.Start();
 
   return 0;

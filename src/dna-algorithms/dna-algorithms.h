@@ -1,10 +1,11 @@
-#ifndef SRC_DNAALGORITHMS_H_
-#define SRC_DNAALGORITHMS_H_
+#ifndef SRC_DNA_ALGORITHMS_DNAALGORITHMS_H_
+#define SRC_DNA_ALGORITHMS_DNAALGORITHMS_H_
 
 #include <algorithm>
 #include <iostream>
 #include <map>
-#include <stdexcept>
+#include <queue>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -19,21 +20,10 @@ bool CorrectSequence(const std::string &str) {
 
 std::vector<size_t> RabinKarpSearch(const std::string &needle,
                                     const std::string &haystack, int q) {
-  if (!CorrectSequence(needle))
-    throw std::invalid_argument(
-        "Needle has wrong dna format. Use only letters: A, C, G, T. in "
-        "uppercase");
-
-  if (!CorrectSequence(haystack))
-    throw std::invalid_argument(
-        "Haystack has wrong dna format. Use only letters: A, C, G, T. in "
-        "uppercase");
-
-  if (needle.size() > haystack.size())
-    throw std::invalid_argument(
-        "Haystack size must be bigger than needle size");
-
   std::vector<size_t> result;
+  if (needle.size() > haystack.size() || needle.size() == 0 ||
+      haystack.size() == 0)
+    return result;
   int haystack_hash = 0;
   int needle_hash = 0;
   int h = 1;
@@ -114,18 +104,7 @@ NwSequence NwSequenceAlignment(int match_s, int mismatch_s, int gap_s,
       }
     }
 
-  //   for (int i = 0; i < (int)str1.size() + 1; i++) {
-  //     for (int j = 0; j < (int)str2.size() + 1; j++) {
-  //       std::cout << matrix[i][j] << " ";
-  //     }
-  //     std::cout << std::endl;
-  //   }
-  //   for (int i = 0; i < (int)str1.size() + 1; i++) {
-  //     for (int j = 0; j < (int)str2.size() + 1; j++) {
-  //       std::cout << backtrack_matrix[i][j] << " ";
-  //     }
-  //     std::cout << std::endl;
-  //   }
+  // backtracking
 
   NwSequence nw_res;
   int res_len = std::max((int)str1.size(), (int)str2.size());
@@ -156,20 +135,33 @@ NwSequence NwSequenceAlignment(int match_s, int mismatch_s, int gap_s,
   return nw_res;
 }
 
-int MatchHere(const std::string &regexp, int r_ind, const std::string &text,
-              int t_ind);
+int MatchHere(const std::string &regexp, size_t r_ind, const std::string &text,
+              size_t t_ind);
 
-int MatchStar(const std::string &regexp, int r_ind, const std::string &text,
-              int t_ind) {
+int MatchStar(const std::string &regexp, size_t r_ind, const std::string &text,
+              size_t t_ind) {
   do {
     if (MatchHere(regexp, r_ind, text, t_ind)) return 1;
   } while (t_ind++ < text.size());
   return 0;
 }
 
-int MatchHere(const std::string &regexp, int r_ind, const std::string &text,
-              int t_ind) {
+int MatchPlus(char ch, const std::string &regexp, size_t r_ind,
+              const std::string &text, size_t t_ind) {
+  do {
+    if (MatchHere(regexp, r_ind, text, t_ind)) return 1;
+  } while (t_ind < text.size() && (text[t_ind++] == ch || ch == '.'));
+  return 0;
+}
+
+int MatchHere(const std::string &regexp, size_t r_ind, const std::string &text,
+              size_t t_ind) {
   if (regexp.size() == r_ind) return text.size() == t_ind;
+  if (r_ind + 1 < regexp.size() && regexp[r_ind + 1] == '+')
+    return MatchPlus(regexp[r_ind], regexp, r_ind + 2, text, t_ind);
+  if (regexp[r_ind] == '?')
+    return (MatchHere(regexp, r_ind + 1, text, t_ind + 1) ||
+            MatchHere(regexp, r_ind + 1, text, t_ind));
   if (regexp[r_ind] == '*') return MatchStar(regexp, r_ind + 1, text, t_ind);
   if (regexp[r_ind] == '.' || regexp[r_ind] == text[t_ind])
     return MatchHere(regexp, r_ind + 1, text, t_ind + 1);
@@ -181,33 +173,105 @@ bool RegExpr(const std::string &pattern, const std::string &text) {
   return MatchHere(pattern, 0, text, 0);
 }
 
-// /* match: search for regexp anywhere in text */
-// int match(char *regexp, char *text) {
-//   if (regexp[0] == '^') return matchhere(regexp + 1, text);
-//   do { /* must look even if string is empty */
-//     if (matchhere(regexp, text)) return 1;
-//   } while (*text++ != '\0');
-//   return 0;
-// }
+int KSimilar(const std::string &str1, const std::string &str2) {
+  std::queue<std::string> q;
+  std::set<std::string> visited;
+  int count = 0;
 
-// /* matchhere: search for regexp at beginning of text */
-// int matchhere(char *regexp, char *text) {
-//   if (regexp[0] == '\0') return 1;
-//   if (regexp[1] == '*') return matchstar(regexp[0], regexp + 2, text);
-//   if (regexp[0] == '$' && regexp[1] == '\0') return *text == '\0';
-//   if (*text != '\0' && (regexp[0] == '.' || regexp[0] == *text))
-//     return matchhere(regexp + 1, text + 1);
-//   return 0;
-// }
+  q.push(str1);
+  visited.insert(str1);
 
-// /* matchstar: search for c*regexp at beginning of text */
-// int matchstar(int c, char *regexp, char *text) {
-//   do { /* a * matches zero or more instances */
-//     if (matchhere(regexp, text)) return 1;
-//   } while (*text != '\0' && (*text++ == c || c == '.'));
-//   return 0;
-// }
+  while (!q.empty()) {
+    // then we don't need two queue for different level nodes
+    size_t q_size = q.size();
+
+    for (size_t i = 0; i < q_size; ++i) {
+      std::string s = q.front();
+      q.pop();
+
+      // current pos of inequal letter
+      size_t p = 0;
+      while (s[p] == str2[p] && p < s.length()) ++p;
+      if (p == s.length()) return count;
+
+      for (size_t j = p + 1; j < s.length(); ++j) {
+        if (s[j] == str2[j] || s[j] != str2[p]) continue;
+        if (s[j] == str2[p]) {
+          std::string tmp = s;
+          std::swap(tmp[j], tmp[p]);
+          if (!visited.count(tmp)) {
+            q.push(tmp);
+            visited.insert(tmp);
+          }
+        }
+      }
+    }
+
+    ++count;
+  }
+
+  return count;
+}
+
+bool contains(const std::unordered_map<char, int> &counts, char ch) {
+  return counts.find(ch) != counts.end();
+}
+
+std::string minWindow(std::string &s, std::string &t) {
+  const int m = (int)s.length();
+  const int n = (int)t.length();
+  if (m < n) return "";
+
+  std::unordered_map<char, int> counts;
+  int balance = 0;
+  for (const auto &ch : t) {
+    ++counts[ch];
+    ++balance;
+  }
+
+  // use sliding window
+  int left = 0, right = -1, start = -1, minLen = __INT32_MAX__;
+  while (right < m) {
+    // make a decision of whether to move left pointer or right pointer
+    // based on whether balance is positive or 0
+    if (balance == 0) {
+      // s[left..right] is a valid window
+      // update start and minLen
+      int len = right - left + 1;
+      if (len < minLen) {
+        minLen = len;
+        start = left;
+      }
+
+      // pop left character, update counts and balance
+      if (contains(counts, s[left]) && (++counts[s[left]] >= 1)) {
+        ++balance;
+      }
+      ++left;
+    } else {
+      // s[left..right] is not a valid window
+      if (++right >= m) {
+        break;
+      }
+
+      // add right character, update counts and balance
+      if (contains(counts, s[right]) && (--counts[s[right]] >= 0)) {
+        --balance;
+      }
+      // pop left character, update counts and balance
+      // only if a valid window has been found before
+      if (start > -1) {
+        if (contains(counts, s[left]) && (++counts[s[left]] >= 1)) {
+          ++balance;
+        }
+        ++left;
+      }
+    }
+  }
+
+  return (start > -1) ? s.substr(start, minLen) : "";
+}
 
 }  // namespace DnaAlgorithm
 
-#endif  // SRC_DNAALGORITHMS_H_
+#endif  // SRC_DNA_ALGORITHMS_DNAALGORITHMS_H_
