@@ -4,9 +4,9 @@
 #include "menu.h"
 
 void MenuItemDnaSearch() {
-  std::string needle_path =
-      Menu::GetUserInput("Enter path to text file(Haystack):\n");
   std::string haystack_path =
+      Menu::GetUserInput("Enter path to text file(Haystack):\n");
+  std::string needle_path =
       Menu::GetUserInput("Enter path to text file(Needle):\n");
 
   std::ifstream haystack_input(haystack_path);
@@ -56,8 +56,7 @@ void MenuItemNwSequenceAlignment() {
   if (!DnaAlgorithm::CorrectSequence(str1) ||
       !DnaAlgorithm::CorrectSequence(str2))
     throw std::invalid_argument(
-        "One of strings has wrong dna format. Only use alphabet {A, "
-        "C, G, T } "
+        "One of strings has wrong dna format. Only use alphabet {A, C, G, T } "
         "uppercase");
 
   DnaAlgorithm::NwSequence res =
@@ -82,21 +81,18 @@ void MenuItemRegExpr() {
 
   std::ifstream input(input_file_path);
   input >> text >> regexp;
-  input.close();
 
   if (!input.is_open() || input.fail())
     throw std::invalid_argument("Can't read input file");
 
   if (!DnaAlgorithm::CorrectSequence(text))
     throw std::invalid_argument(
-        "Text has wrong dna format. Only use alphabet {A, "
-        "C, G, T } "
-        "uppercase");
+        "Text has wrong dna format. Only use alphabet {A, C, G, T } uppercase");
 
   bool match = DnaAlgorithm::RegExpr(regexp, text);
 
-  std::cout << (match ? "True" : "False");
-};
+  std::cout << "Match" << std::endl << (match ? "True" : "False");
+}
 
 void MenuItemKSimilar() {
   std::string input_file_path =
@@ -106,7 +102,6 @@ void MenuItemKSimilar() {
 
   std::ifstream input(input_file_path);
   input >> str1 >> str2;
-  input.close();
 
   if (!input.is_open() || input.fail())
     throw std::invalid_argument("Can't read input file");
@@ -129,7 +124,6 @@ void MenuItemMinimumWindow() {
 
   std::ifstream input(input_file_path);
   input >> str1 >> str2;
-  input.close();
 
   if (!input.is_open() || input.fail())
     throw std::invalid_argument("Can't read input file");
@@ -141,7 +135,8 @@ void MenuItemMinimumWindow() {
         "C, G, T } "
         "uppercase");
 
-  std::cout << DnaAlgorithm::minWindow(str1, str2);
+  std::cout << "Minimum window substr" << std::endl
+            << DnaAlgorithm::MinWindowSubstr(str1, str2);
 }
 
 int main() {
@@ -151,7 +146,7 @@ int main() {
       {"NW sequence alignment project", MenuItemNwSequenceAlignment});
   menu.AddMenuItem({"Matching regular expressions", MenuItemRegExpr});
   menu.AddMenuItem({"K-similar strings", MenuItemKSimilar});
-  menu.AddMenuItem({"Minimum window substring", MenuItemDnaSearch});
+  menu.AddMenuItem({"Minimum window substring", MenuItemMinimumWindow});
 
   menu.Start();
 
