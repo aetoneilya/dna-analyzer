@@ -201,7 +201,7 @@ bool contains(const std::unordered_map<char, int> &counts, char ch) {
 std::string MinWindowSubstr(std::string &s, std::string &t) {
   const int m = (int)s.length();
   const int n = (int)t.length();
-  if (m < n) return "";
+  if (m < n || m == 0 || n == 0) return "";
 
   std::unordered_map<char, int> counts;
   int balance = 0;

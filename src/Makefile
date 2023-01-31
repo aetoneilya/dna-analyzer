@@ -20,10 +20,11 @@ TESTSRC=test.cc
 TESTOBJ=$(TESTSRC:.cc=.o)
 SRC=$(filter-out ./$(MAINSRC) ./$(TESTSRC), $(shell find . -type f -name "*.cc" -not -path "./view/*"))
 OBJ=$(SRC:.cc=.o)
-
+LCOVEXEC=$(TESTEXECUTABLE).info
+REPORTDIR=report
 
 EXECUTABLE=$(PROJECT_NAME)
-TESTEXECUTABLE="$(PROJECT_NAME)-test"
+TESTEXECUTABLE=test-$(PROJECT_NAME)
 
 .PHONY: all build style cpplint clean rebuild
 
@@ -41,6 +42,13 @@ test: $(TESTOBJ) $(OBJ)
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
+gcov_report: CXXFLAGS+=--coverage
+gcov_report: LDFLAGS+=--coverage
+gcov_report: test
+	lcov -t $(TESTEXECUTABLE) -o $(LCOVEXEC) -c -d .
+	lcov -r $(LCOVEXEC) -o $(LCOVEXEC)
+	genhtml  -o $(REPORTDIR) $(LCOVEXEC)
+
 style: cppcheck clang cpplint
 
 cppcheck:
@@ -55,6 +63,7 @@ cpplint:
 	cpplint --extensions=cc,h --filter=-runtime/references --recursive ./
 
 clean:
-	rm -rf $(OBJ) $(EXECUTABLE) $(MAINOBJ) $(TESTOBJ) $(TESTEXECUTABLE)
+	rm -rf $(OBJ) $(EXECUTABLE) $(MAINOBJ) $(TESTOBJ) $(TESTEXECUTABLE) 
+	rm $(LCOVEXEC) $(REPORTDIR)  -rf *.info $(SRC:.cc=.gcno) $(SRC:.cc=.gcda) $(TESTSRC:.cc=.gcda) $(TESTSRC:.cc=.gcno)
 
 rebuild: clean all
